@@ -61,24 +61,43 @@ int main(){
   sei();
   while(1){
     usart_recieve();
-    if(ch=='8')
+    if(ch==0b10110111)
     {  
       ff();
     }
-    else if(ch=='2') 
+    else if(ch==0b01111011) 
     {
       fb(); 
     }
-    else if(ch=='5'){
+    else if(ch==0){
       fs();
     }
-    else if(ch=='6'){
+    else if(ch==0b10110000){
+      PORTB=(1<<0);//toprightcorner
+    }
+    else if(ch==0b00000111){
+      PORTB=(1<<3);//topleftcorner
+    }
+    else if(ch==0b01110000){
+      PORTB=(1<<1);//bottomleftcorner
+    }
+    else if(ch==0b00001011){
+      PORTB=(1<<2);//bottomrightcorner
+    }
+    else if(ch==0b10111011){
+      pl();//leftcorner
+    }
+    else if(ch==0b01110111){
+      pr();//leftcorner
+    }
+    /*else if(ch=='6'){
       pr(); 
     }
     else if(ch=='4'){
       pl();
-    }
+    }*/
   }
   return 0;
 }
+
 

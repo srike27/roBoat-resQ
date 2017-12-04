@@ -38,21 +38,34 @@ while(1)
 { 
   x=adc_read(0);
   y=adc_read(1);
-  if(x>1000){
-    ch='8';
+  if(x>600&&y>600){
+    ch=0b10110000;//topright
   }
-  else if(x<50){
-    ch='2';
+  else if(x<450&&y>600){
+    ch=0b00001011;
   }
-  else if(y>1000){
-    ch='6';
+  else if(x>600&& y<450){
+    ch=0b00000111;
   }
-  else if(y<50){
-    ch='4';
+  else if(y<450 && x<450){
+    ch=0b01110000;
   }
-  else{
-    ch='5';
+  else if(x>450 && x<600 && y>450 && y<600){
+    ch=0;
   }
+  else if(x>600&& y>450 && y<600){
+    ch=0b10110111;//forward
+  }
+  else if(x>450 && x<600 && y>600){
+    ch=0b10111011;
+  }
+  else if(x>450 && x<600&& y<450){
+    ch=0b01110111;
+  }
+  else if(x<450&& y>450 && y<600){
+    ch=0b01111011;//reverse
+  }
+  
  usart_send(ch);
  } 
 } 
