@@ -38,32 +38,32 @@ while(1)
 { 
   x=adc_read(0);
   y=adc_read(1);
-  if(x>1000&&y>1000){
-    ch=0b10110000;
+  if(x>600&&y>600){
+    ch=0b10110000;//topright
   }
-  else if(x<50&&y>1000){
+  else if(x<450&&y>600){
     ch=0b00001011;
   }
-  else if(x>1000&& y<50){
+  else if(x>600&& y<450){
     ch=0b00000111;
   }
-  else if(y<50 && x<50){
+  else if(y<450 && x<450){
     ch=0b01110000;
   }
-  else if(x>500 && x<520 && y>500 && y<520){
+  else if(x>450 && x<600 && y>450 && y<600){
     ch=0;
   }
-  else if(x>1000&& y>500 && y<520){
-    ch=0b10110111;
+  else if(x>600&& y>450 && y<600){
+    ch=0b10110111;//forward
   }
-  else if(x>500 && x<520 && y>1000){
+  else if(x>450 && x<600 && y>600){
     ch=0b10111011;
   }
-  else if(x>500 && x<520&& y<50){
+  else if(x>450 && x<600&& y<450){
     ch=0b01110111;
   }
-  else if(x<50&& y>500 && y<520){
-    ch=0b01111011;
+  else if(x<450&& y>450 && y<600){
+    ch=0b01111011;//reverse
   }
   
  usart_send(ch);
