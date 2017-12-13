@@ -12,21 +12,21 @@ Arduino     MARG MPU-9150
 //
 //  Copyright (c) 2013 Pansenti, LLC
 //
-//  Permission is hereby granted, free of charge, to any person obtaining a copy of 
-//  this software and associated documentation files (the "Software"), to deal in 
-//  the Software without restriction, including without limitation the rights to use, 
-//  copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the 
-//  Software, and to permit persons to whom the Software is furnished to do so, 
+//  Permission is hereby granted, free of charge, to any person obtaining a copy of
+//  this software and associated documentation files (the "Software"), to deal in
+//  the Software without restriction, including without limitation the rights to use,
+//  copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+//  Software, and to permit persons to whom the Software is furnished to do so,
 //  subject to the following conditions:
 //
-//  The above copyright notice and this permission notice shall be included in all 
+//  The above copyright notice and this permission notice shall be included in all
 //  copies or substantial portions of the Software.
 //
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-//  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-//  PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
-//  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
-//  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+//  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+//  PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+//  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+//  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 //  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <Wire.h>
@@ -62,8 +62,8 @@ MPU9150Lib MPU;                                              // the MPU object
 
 #define  MPU_MAG_MIX_GYRO_ONLY          0                   // just use gyro yaw
 #define  MPU_MAG_MIX_MAG_ONLY           1                   // just use magnetometer and no gyro yaw
-#define  MPU_MAG_MIX_GYRO_AND_MAG       10                  // a good mix value 
-#define  MPU_MAG_MIX_GYRO_AND_SOME_MAG  50                  // mainly gyros with a bit of mag correction 
+#define  MPU_MAG_MIX_GYRO_AND_MAG       10                  // a good mix value
+#define  MPU_MAG_MIX_GYRO_AND_SOME_MAG  50                  // mainly gyros with a bit of mag correction
 
 //  MPU_LPF_RATE is the low pas filter rate and can be between 5 and 188Hz
 
@@ -71,11 +71,24 @@ MPU9150Lib MPU;                                              // the MPU object
 
 //  SERIAL_PORT_SPEED defines the speed to use for the debug serial port
 
-#define  SERIAL_PORT_SPEED  115200
+#define  SERIAL_PORT_SPEED  9600
+void usart_int(void)
+ { UCSR0B=(1<< RXEN0)|(1<< TXEN0);
+UCSR0C=(1<<UCSZ01)|(1<<UCSZ00) ;
+UBRR0L= 0x67 ; //BAUD RATE 9600
+UCSR0A= 0x00;
+}
+ void usart_send(int ch )
+
+{
+ while(UCSR0A!=(UCSR0A|(1<< UDRE0)));
+ UDR0= ch; }
+
+char quotient[9], remainder[9]; // 0-2 accel, 3-5 mag, 6-8 euler
 
 void setup()
 {
-  Serial.begin(SERIAL_PORT_SPEED);
+  usart_int();
  // Serial.print("Arduino9150 starting using device "); Serial.println(DEVICE_TO_USE);
   Wire.begin();
   MPU.selectDevice(DEVICE_TO_USE);                        // only really necessary if using device 1
@@ -83,7 +96,7 @@ void setup()
 }
 
 void loop()
-{  
+{
   //MPU.selectDevice(DEVICE_TO_USE);                         // only needed if device has changed since init but good form anyway
   if (MPU.read()) {                                        // get the latest data if ready yet
 //  MPU.printQuaternion(MPU.m_rawQuaternion);              // print the raw quaternion from the dmp
@@ -92,6 +105,27 @@ void loop()
 //  MPU.printAngles(MPU.m_dmpEulerPose);                   // the Euler angles from the dmp quaternion
 //  MPU.printVector(MPU.m_calAccel);                       // print the calibrated accel data
 //  MPU.printVector(MPU.m_calMag);                         // print the calibrated mag data
-    //MPU.printAngles(MPU.m_fusedEulerPose);                 // print the output of the data fusion
+  //MPU.printAngles(MPU.m_fusedEulerPose);                 // print the output of the data fusion x -> pitch, y -> roll z -> yaw
+  //Serial.println(MPU.m_calAccel[0]);
+    for(int i=0;i<3;i++)
+    {
+      quotient[i] = (MPU.m_calAccel[i]*0.194)/256;
+      quotient[3+i] = (MPU.m_calMag[i]*177.76)/256;
+      quotient[6+i] = (MPU.m_fusedEulerPose[i]*RAD_TO_DEGREE*177.76)/256;
+    }
+    for(int j=0;j<3;j++)
+    {
+      remainder[j] = int(MPU.m_calAccel[j]*0.194)%256;
+      remainder[3+j] = int(MPU.m_calMag[j]*88.88)%256;
+      remainder[6+j] = int(MPU.m_fusedEulerPose[j]*88.88)%256;
+    }
+     usart_send('s'); 
+    for(int k=0;k<9;k++)
+    {
+     usart_send(quotient[i]);
+     usart_send(remainder[i]); 
+    }
+     usart_send('e'); 
   }
+  
 }
