@@ -1,8 +1,26 @@
 #include<avr/io.h>
 #include <util/delay.h>
-#include <stdlib.h>0[0
+#include <stdlib.h>
 #include<avr/interrupt.h>
-unsigned char ch; 
+unsigned char ch;
+int soundraw,soundthresh=0,persistence=0;
+void adc_init()
+{
+    ADMUX = (1<<REFS0);
+    ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
+}
+
+uint16_t adc_read(uint8_t ch)
+{
+  uint16_t adc;
+  ch &= 0b00000111;
+  ADMUX = (ADMUX & 0xF8)|ch;
+  ADCSRA |= (1<<ADSC);
+  while(ADCSRA & (1<<ADSC));
+  adc=ADC;
+   ADMUX = (ADMUX & 0b11111000);
+  return (adc);
+}
 void timer0init(){
   TCCR0A|=(1<<WGM00)|(1<<WGM01)|(1<<COM0A1)|(1<<COM0B1);
   TCCR0B|=(1<<CS01);
@@ -12,7 +30,7 @@ void timer1init()
 {
   TCCR1B |= (1<<WGM12) | (1<<CS11)|(1<<CS10);//Prescalar 64
   TIMSK1 |=(1<<OCIE1A);
-  OCR1A=2499;
+  OCR1A=1249;
 }
 
 void setduty(int l,int r){
@@ -20,13 +38,13 @@ void setduty(int l,int r){
   OCR0B=(255*r)/100;
 }
 void usart_init(void)
- { UCSR0B=(1<< RXEN0)|(1<< TXEN0); 
-UCSR0C=(1<<UCSZ01)|(1<<UCSZ00) ; 
-UBRR0L= 0x67 ; //BAUD RATE 9600 
+ { UCSR0B=(1<< RXEN0)|(1<< TXEN0);
+UCSR0C=(1<<UCSZ01)|(1<<UCSZ00) ;
+UBRR0L= 0x67 ; //BAUD RATE 9600
 UCSR0A= 0x00;
 }
- void usart_send(int ch ) 
- 
+ void usart_send(int ch )
+
 {
  while(UCSR0A!=(UCSR0A|(1<< UDRE0)));//waiting for UDRE to become high
  UDR0= ch; }
@@ -56,6 +74,7 @@ void pl(){
 int main(){
   DDRB|=(1<<PB7);
   DDRG|=(1<<PG5);
+  adc_init();
   timer0init();
   DDRA=0xFF;
   usart_init();
@@ -63,12 +82,12 @@ int main(){
   while(1){
     usart_recieve();
     if(ch=='8')
-    {  
+    {
       ff();
     }
-    else if(ch=='2') 
+    else if(ch=='2')
     {
-      fb(); 
+      fb();
     }
     else if(ch=='5'){
       fs();
@@ -91,12 +110,18 @@ int main(){
     else if(ch=='6'){
       pr();
     }
-    /*else if(ch=='6'){
-      pr(); 
-    }
-    else if(ch=='4'){
-      pl();
-    }*/
-  }
   return 0;
+}
+ISR(TIMER1_COMPA_vect){
+  soundraw =adc_read(0);
+  soundraw= (1023-soundraw)*(1023-soundraw)/(100);
+  if(soundraw>(soundthresh)*5.0/4.0 || soundraw<(soundthresh)*3.0/4.0){
+    usart_send('h');
+  }
+  /*else
+    persistence=0;
+  if(persistence>10){
+    usart_send('h');
+  }*/
+  soundthresh=(soundthresh+soundraw)/2;
 }
