@@ -2,9 +2,7 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include<avr/interrupt.h>
-unsigned char ch,ch1;
-char quotient[9], remainder[9];
-int IMUval[9];
+unsigned char ch;
 int soundraw,soundthresh=0,persistence=0;
 void adc_init()
 {
@@ -45,30 +43,20 @@ UCSR0C=(1<<UCSZ01)|(1<<UCSZ00) ;
 UBRR0L= 0x67 ; //BAUD RATE 9600
 UCSR0A= 0x00;
 }
-void UART_init1()
-{
-  UBRR1L = 0x67;
-  UCSR1B |= (1<<TXEN1) | (1<<RXEN1);
-  UCSR1A = 0x00;
-}
-
  void usart_send(int ch )
 
 {
+  cli();
  while(UCSR0A!=(UCSR0A|(1<< UDRE0)));//waiting for UDRE to become high
- UDR0= ch; }
+ UDR0= ch;
+ sei();
+ }
 
 char usart_recieve(){
  while(UCSR0A!= (UCSR0A|(1<<RXC0)));
  ch=UDR0;
  return ch;
 }
-void UART_receive1()
-{
-  while(UCSR1A != (UCSR1A|(1<<RXC1)));
-  ch = UDR1;
-}
-
 void ff(){
   PORTA=(1<<0)|(1<<3);
   setduty(100,100);
@@ -86,40 +74,17 @@ void pr(){
 void pl(){
   PORTA=(1<<0)|(1<<2);
 }
-
-void IMUvalues()
-{
-   UART_receive1();
-   if(ch=='s')
-   {
-    for(int i=0;i<9;i++)
-    {
-      UART_receive1();
-      quotient[i] = ch;
-      UART_receive1();
-      remainder[i] = ch;
-    }
-    while(ch!='e') UART_receive1();
-   }
-   for(int i=0;i<9;i++)
-   {
-    IMUval[i] = ((quotient[i]-128)*256) + remainder[i]-128;
-    //UART_send(IMUval[i]);
-   }
-}
-
 int main(){
   DDRB|=(1<<PB7);
   DDRG|=(1<<PG5);
+  DDRC|=(1<<PC1);
   adc_init();
   timer0init();
   timer1init();
   DDRA=0xFF;
   usart_init();
-  UART_init1();
   sei();
   while(1){
-    IMUvalues();
     usart_recieve();
     if(ch=='8')
     {
@@ -150,19 +115,22 @@ int main(){
     else if(ch=='6'){
       pr();
     }
+  }
   return 0;
-}
 }
 ISR(TIMER1_COMPA_vect){
   soundraw =adc_read(0);
-  soundraw= (1023-soundraw)*(1023-soundraw)/(100);
-  if(soundraw>(soundthresh)*5.0/4.0 || soundraw<(soundthresh)*3.0/4.0){
-    usart_send('h');
+  soundraw= (1023-soundraw);
+  if(soundraw>50){
+    PORTC|=(1<<PC1);
+  }
+
+  else{
+    PORTC=0;
   }
   /*else
     persistence=0;
   if(persistence>10){
     usart_send('h');
   }*/
-  soundthresh=(soundthresh+soundraw)/2;
 }
