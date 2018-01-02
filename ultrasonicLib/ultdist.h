@@ -10,6 +10,7 @@
 class ultdist  {
   public:
     ultdist(int trig,int echo);
+    void ultinit();
     long getdist();
 
   private:
