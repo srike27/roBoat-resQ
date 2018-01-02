@@ -7,7 +7,8 @@
   #include "WProgram.h"
 #endif
 
-class ultdist  {
+class ultdist
+{
   public:
     ultdist(int trig,int echo);
     void ultinit();
