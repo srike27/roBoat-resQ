@@ -1,16 +1,17 @@
 #include <ultdist.h>
 #include <DCMotor.h>
-long i=0,da,db,dc;
+long i=0,dl,dm,dr;
 int sound;
-ultdist a(50,51);//trig,echo
-ultdist b(52,53);
-ultdist c(48,49);
+ultdist mu(50,51);//trig,echo
+ultdist ru(52,53);
+ultdist lu(48,49);
 dcm ma(5,8,9);//en,i1,i2
 dcm mb(6,10,11);
 void setup() {
   // put your setup code here, to run once:
-  a.ultinit();
-  b.ultinit();
+  mu.ultinit();
+  ru.ultinit();
+  lu.ultinit();
   ma.minit();
   mb.minit();
   Serial.begin(9600);
@@ -33,20 +34,20 @@ void loop() {
     mb.mspeed(-inByte);
   }
   if(i%30==0){
-    da=a.getdist();
+    dm=mu.getdist();
   }
   else if(i%30==10){
-    db=b.getdist();
+    dr=ru.getdist();
   }
   else if(i%30==20){
-    dc=c.getdist();
+    dl=lu.getdist();
   }
-  if(da<100&&db<100&&dc<100){
-  Serial.print(da);
+  if(dl<100&&dm<100&&dr<100){
+  Serial.print(dl);
   Serial.print("  ");
-  Serial.print(db);
+  Serial.print(dm);
   Serial.print("  ");
-  Serial.println(dc);
+  Serial.println(dr);
   }
   /*if(!(digitalRead(2))&&(i%10==0)){
     Serial.println("HelP");
@@ -55,3 +56,4 @@ void loop() {
   //Serial.println(" ");
   i++;
 }
+
