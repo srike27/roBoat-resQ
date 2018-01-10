@@ -6,29 +6,6 @@ Arduino     MARG MPU-9150
   GND           GND
 */
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  This file is part of MPU9150Lib
-//
-//  Copyright (c) 2013 Pansenti, LLC
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a copy of 
-//  this software and associated documentation files (the "Software"), to deal in 
-//  the Software without restriction, including without limitation the rights to use, 
-//  copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the 
-//  Software, and to permit persons to whom the Software is furnished to do so, 
-//  subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in all 
-//  copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-//  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-//  PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
-//  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
-//  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
-//  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include <Wire.h>
 #include "I2Cdev.h"
 #include "MPU9150Lib.h"
@@ -62,8 +39,8 @@ MPU9150Lib MPU;                                              // the MPU object
 
 #define  MPU_MAG_MIX_GYRO_ONLY          0                   // just use gyro yaw
 #define  MPU_MAG_MIX_MAG_ONLY           1                   // just use magnetometer and no gyro yaw
-#define  MPU_MAG_MIX_GYRO_AND_MAG       10                  // a good mix value 
-#define  MPU_MAG_MIX_GYRO_AND_SOME_MAG  50                  // mainly gyros with a bit of mag correction 
+#define  MPU_MAG_MIX_GYRO_AND_MAG       10                  // a good mix value
+#define  MPU_MAG_MIX_GYRO_AND_SOME_MAG  50                  // mainly gyros with a bit of mag correction
 
 //  MPU_LPF_RATE is the low pas filter rate and can be between 5 and 188Hz
 
@@ -71,19 +48,30 @@ MPU9150Lib MPU;                                              // the MPU object
 
 //  SERIAL_PORT_SPEED defines the speed to use for the debug serial port
 
-#define  SERIAL_PORT_SPEED  115200
+#define  SERIAL_PORT_SPEED  9600
+
+int inByte = 0;
+
+void establishContact() {
+  while (Serial.available() <= 0) {
+    Serial.print('A');   // send a capital A
+    delay(300);
+  }
+}
 
 void setup()
 {
   Serial.begin(SERIAL_PORT_SPEED);
+  //establishContact();
  // Serial.print("Arduino9150 starting using device "); Serial.println(DEVICE_TO_USE);
   Wire.begin();
   MPU.selectDevice(DEVICE_TO_USE);                        // only really necessary if using device 1
   MPU.init(MPU_UPDATE_RATE, MPU_MAG_MIX_GYRO_AND_MAG, MAG_UPDATE_RATE, MPU_LPF_RATE);   // start the MPU
+  //Serial.println("");
 }
 
 void loop()
-{  
+{
   //MPU.selectDevice(DEVICE_TO_USE);                         // only needed if device has changed since init but good form anyway
   if (MPU.read()) {                                        // get the latest data if ready yet
 //  MPU.printQuaternion(MPU.m_rawQuaternion);              // print the raw quaternion from the dmp
@@ -93,5 +81,12 @@ void loop()
 //  MPU.printVector(MPU.m_calAccel);                       // print the calibrated accel data
 //  MPU.printVector(MPU.m_calMag);                         // print the calibrated mag data
     //MPU.printAngles(MPU.m_fusedEulerPose);                 // print the output of the data fusion
+
+    /*Serial.print(MPU.m_fusedEulerPose[0]*180/3.14); //Serial.print(",");
+    Serial.print(",");
+    Serial.print(MPU.m_fusedEulerPose[1]*180/3.14); //Serial.print(",");
+    Serial.print(",");*/
+    Serial.write(uint8_t(MPU.m_fusedEulerPose[2]*127/3.14)); //Serial.println(",");
+   // Serial.println("   y");
   }
 }
