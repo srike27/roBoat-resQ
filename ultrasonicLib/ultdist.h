@@ -1,5 +1,5 @@
-#ifndef tl
-#define tl
+#ifndef ul
+#define ul
 
 #if (ARDUINO >=100)
   #include "Arduino.h"
@@ -7,8 +7,7 @@
   #include "WProgram.h"
 #endif
 
-class ultdist
-{
+class ultdist  {
   public:
     ultdist(int trig,int echo);
     void ultinit();
