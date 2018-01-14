@@ -1,14 +1,16 @@
+#include <TinyGPS.h>
 #include <ultdist.h>
 #include <DCMotor.h>
+TinyGPS gps;
 long i=0,dl,dm,dr;
 int sound;
-int head,lspeed=200,rspeed=200;
+int head,bearing=0,lspeed=200,rspeed=200;
 ultdist mu(50,51);//trig,echo
 ultdist ru(52,53);
 ultdist lu(48,49);
 dcm ml(5,8,9);//en,i1,i2 ----> left motor
 dcm mr(6,10,11); // ----> right motor
-
+float slat,slon;
 void object_avoid()
 {
   if(dl<10)
@@ -46,7 +48,7 @@ void head_control(int a)
     if(rspeed<-255) rspeed = -255;
     ml.mspeed(lspeed);
     mr.mspeed(rspeed);
-    Serial.println(head);
+    //Serial.println(head);
   }
   else
   {
@@ -118,12 +120,16 @@ void loop() {
 
   //object_avoid();
 //  hcontrol(60);
-  head_control(0);
  // Serial.println(head);
   /*if(!(digitalRead(2))&&(i%10==0)){
     Serial.println("HelP");
     Serial2.println("HelP");
   }*/
-  //Serial.println(" ");
+ if(Serial2.available()){
+  bearing=Serial2.read();
+  bearing=bearing*1.40625;
+ }
+ Serial.println(bearing);
+  head_control(bearing);
   i++;
 }
