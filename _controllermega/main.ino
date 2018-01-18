@@ -4,25 +4,33 @@
 TinyGPS gps;
 long i=0,dl,dm,dr;
 int sound;
-int head,bearing=0,lspeed=200,rspeed=200;
+int head,bearing=0,lspeed=200,rspeed=200,bear=200;
+int lflag=0, mflag=0, rflag=0, lerr, merr, rerr, rkp=100, lkp=100, mkp=100;
 ultdist mu(50,51);//trig,echo
 ultdist ru(52,53);
 ultdist lu(48,49);
 dcm ml(5,8,9);//en,i1,i2 ----> left motor
 dcm mr(6,10,11); // ----> right motor
 float slat,slon;
-void object_avoid()
-{
-  if(dl<10)
-  {
 
-  }
-  else
+void read_bearing()
+{
+ if(Serial2.available())
+ {
+  bearing=Serial2.read();
+  bearing=bearing*1.40625;
+ }
+}
+
+void read_head()
+{
+  if (Serial1.available()) 
   {
-    ml.mspeed(255);
-    mr.mspeed(255);
+    head = Serial1.read();
+    head = head*1.40625;
   }
 }
+
 void head_control(int a)
 {
   int e,kp=10,f;
@@ -56,27 +64,105 @@ void head_control(int a)
     mr.mspeed(200);
   }
 }
-/*void hcontrol(int a){
-  int e,kp=1,f;
-  if(a!=head){
-    f=(a-head)/abs(a-head);
-    if(abs(a-head)<abs(360-a+head)){
-      e=abs(a-head);
-      ml.mspeed(lspeed-f*e*kp);
-      mr.mspeed(rspeed+f*e*kp);
-    }
-    else{
-      e=abs(360-a+head);
-      ml.mspeed(lspeed+f*e*kp);
-      mr.mspeed(rspeed-f*e*kp);
-    }
+
+void obs_avoid()
+{
+  dm=mu.getdist();
+  dl=lu.getdist();
+  dr=ru.getdist();
+  if(dl<20) {lflag = 1; lerr = 20-dl;}
+  else lflag = 0; 
+  if(dm<20) {mflag = 1; merr = 20-dl;}
+  else mflag = 0;
+  if(dr<20) {rflag = 1; rerr = 20-dr;}
+  else rflag = 0;
+
+  if(lflag==0&&mflag==0&&rflag==0)      //   000
+  {
+    /*lspeed = 150;
+    rspeed = 150;
+    ml.mspeed(lspeed);
+    mr.mspeed(rspeed);*/
+    head_control(bear);
   }
-  else{
-    ml.mspeed(lspeed-20);
-    mr.mspeed(rspeed-20);
+  if(lflag==0&&mflag==0&&rflag==1)      //   001
+  {
+    lspeed = -100;
+    ml.mspeed(lspeed);
+    rspeed += rkp*rerr;
+    if(rspeed>255) rspeed = 255;
+    mr.mspeed(rspeed);
+    bear=head;
+  }if(lflag==0&&mflag==1&&rflag==0)      //   010
+  {
+    //obstacle ahead
+  }  
+  if(lflag==0&&mflag==1&&rflag==1)      //   011
+  {
+    lspeed = -150; rspeed = -150;
+    ml.mspeed(lspeed);
+    mr.mspeed(rspeed);
+    _delay_ms(1000);
+    read_head();
+    int temp_head;
+    if(head<90) temp_head = (head-90)+360;
+    else temp_head = head-90;
+    while(abs(head-temp_head)>5)
+    {
+      head_control(temp_head);
+      read_head();
+    }
+    bear=head;
+  }  
+  if(lflag==1&&mflag==0&&rflag==0)      //   100
+  {
+    rspeed = -100;
+    mr.mspeed(rspeed);
+    lspeed += lkp*lerr;
+    if(lspeed>255) lspeed = 255;
+    ml.mspeed(lspeed);
+    bear=head;
+  }  
+  if(lflag==1&&mflag==1&&rflag==0)      //   110
+  {
+    lspeed = -150; rspeed = -150;
+    ml.mspeed(lspeed);
+    mr.mspeed(rspeed);
+    _delay_ms(1000);
+    read_head();
+    int temp_head;
+    if(head>270) temp_head = (head+90)-360;
+    else temp_head = head+90;
+    while(abs(head-temp_head)>5)
+    {
+      head_control(temp_head);
+      read_head();
+    }
+    bear=head;
+  }  
+  if(lflag==1&&mflag==1&&rflag==1)      //   111
+  {
+    lspeed = -150; rspeed = -150;
+    ml.mspeed(lspeed);
+    mr.mspeed(rspeed);
+    _delay_ms(1000);
+    read_head();
+    int temp_head;
+    if(head<180) temp_head = (head-180)+360;
+    else temp_head = head-180;
+    while(abs(head-temp_head)>5)
+    {
+      head_control(temp_head);
+      read_head();
+    }
+    bear=head;
   }
+  Serial.print(head); Serial.print(' ');
+  Serial.print(dl); Serial.print(' ');
+  Serial.print(dm); Serial.print(' ');
+  Serial.println(dr);
 }
-*/
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -93,14 +179,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if (Serial1.available()) {
-    head = Serial1.read();
-    //head += 256;
-    head = head*1.40625;
-    //Serial.println(inByte);
-    //ml.mspeed(100);
-    //mr.mspeed(-100);
-  }
+  read_head();
+  read_bearing();
+  bear=head;
   if(i%30==0){
     dm=mu.getdist();
   }
@@ -110,26 +191,13 @@ void loop() {
   else if(i%30==20){
     dl=lu.getdist();
   }
-  /*if(dl<100&&dm<100&&dr<100){
-  Serial.print(dl);
-  Serial.print("  ");
-  Serial.print(dm);
-  Serial.print("  ");
-  Serial.println(dr);
-  }*/
-
-  //object_avoid();
-//  hcontrol(60);
- // Serial.println(head);
+  if(dl<20||dm<20||dr<20)
+  obs_avoid();
   /*if(!(digitalRead(2))&&(i%10==0)){
     Serial.println("HelP");
     Serial2.println("HelP");
   }*/
- if(Serial2.available()){
-  bearing=Serial2.read();
-  bearing=bearing*1.40625;
- }
- Serial.println(bearing);
-  head_control(bearing);
+ //Serial.println(bearing);
+ // head_control(bearing);
   i++;
 }
